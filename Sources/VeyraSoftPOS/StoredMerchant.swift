@@ -1,8 +1,8 @@
-// StoredMerchant — SDK-owned persistence of the registered merchant (STORY-33 Phase 2, ISSUE-05).
+// StoredMerchant — SDK-owned persistence of the registered merchant.
 //
 // iOS twin of Android's MerchantDataStore/StoredMerchantData: a successful
 // VeyraSoftPOS.shared.merchant.register(_:) persists the merchant in a protected app-sandbox
-// file (STORY-59 — moved off the Keychain so it is cleared on uninstall, not carried over) so
+// file (moved off the Keychain so it is cleared on uninstall, not carried over) so
 // it survives app restarts, and apps gate on merchant.isRegistered instead of re-registering.
 // Status/activate/deactivate/update responses keep the stored copy current.
 import Foundation
@@ -172,12 +172,12 @@ protocol MerchantStorage {
     func clear()
 }
 
-/// File-backed storage in the app's Application Support directory — the STORY-59 replacement
-/// for `KeychainMerchantStorage`.
+/// File-backed storage in the app's Application Support directory — the replacement for
+/// the legacy `KeychainMerchantStorage`.
 ///
 /// The merchant registration is **profile data, not an auth secret**, so the Keychain was the
 /// wrong medium: Keychain items survive app deletion, so an uninstalled merchant silently came
-/// back on reinstall (ISSUE-83). A protected file in the app sandbox is removed on uninstall —
+/// back on reinstall. A protected file in the app sandbox is removed on uninstall —
 /// the SDK guaranteeing "uninstall = clean state" without any app-developer action. The payload
 /// still includes the BVN, so the file is written with Data Protection
 /// (`completeUntilFirstUnlock`, matching the old Keychain accessibility and the softpos
@@ -195,7 +195,7 @@ final class FileMerchantStorage: MerchantStorage {
         let dir = base.appendingPathComponent("co.veyra.softpos", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         fileURL = dir.appendingPathComponent("stored-merchant.json")
-        // STORY-59: one-time wipe of the legacy Keychain merchant (which would otherwise survive
+        // one-time wipe of the legacy Keychain merchant (which would otherwise survive
         // uninstall). Clean slate — the old value is discarded, not migrated.
         LegacyKeychainMerchantStorage().clear()
     }
@@ -217,7 +217,7 @@ final class FileMerchantStorage: MerchantStorage {
     }
 }
 
-/// The pre-STORY-59 Keychain store — retained ONLY so the file store can wipe it once on
+/// The legacy Keychain store — retained ONLY so the file store can wipe it once on
 /// migration. Not used for reads/writes anymore.
 final class LegacyKeychainMerchantStorage: MerchantStorage {
     private let service = "co.veyra.softpos"

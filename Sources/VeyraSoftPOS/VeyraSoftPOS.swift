@@ -1,16 +1,16 @@
-// VeyraSoftPOS — public iOS API of the Veyra SoftPOS SDK (STORY-33 Phase 2).
+// VeyraSoftPOS — public iOS API of the Veyra SoftPOS SDK.
 //
-// Pure-Swift facade over the VeyraKMP umbrella framework (naming per story-33 §2.4:
-// Swift-idiomatic, no Iventure* prefix, async/await, typed errors). KMP/Obj-C types (VKMP*)
-// must never appear in public signatures — every boundary maps to a Swift type here.
+// Pure-Swift facade over the VeyraKMP umbrella framework (Swift-idiomatic: async/await,
+// typed errors). KMP/Obj-C types (VKMP*) must never appear in public signatures — every
+// boundary maps to a Swift type here.
 //
-// This is the "iOS SoftPOS non-NFC" surface: registration, activate/deactivate/status, update,
-// bank list, transaction status. Payment acceptance on iOS is via the MPM QR rail (Phase 3);
-// NFC card acceptance is STORY-35.
+// The merchant surface: registration, activate/deactivate/status, update, bank list,
+// transaction status — plus payment acceptance via the merchant-presented QR rail and
+// contactless tap.
 //
 // Android ↔ iOS name mapping (excerpt; full table in the package README):
-//   MerchantRegistrationClient(...).register(request) { … }
-//     ↔ try await VeyraSoftPOS.shared.merchant.register(registration)
+// MerchantRegistrationClient(...).register(request) { … }
+// ↔ try await VeyraSoftPOS.shared.merchant.register(registration)
 import Foundation
 import VeyraKMP
 
@@ -155,7 +155,7 @@ public struct MerchantStatus: Sendable, Hashable {
     }
 }
 
-/// A gateway-signed merchant-presented (MPM) payment context (STORY-33 Phase 3).
+/// A gateway-signed merchant-presented (MPM) payment context.
 /// Render `mpmPayload` as the QR verbatim; the customer's wallet verifies the gateway
 /// signature before paying. Poll the outcome with `payments.contextStatus(txRef:)`.
 /// A scanned, structurally-valid customer payment QR (consumer-presented): what the merchant
@@ -178,7 +178,7 @@ public struct CustomerQrChargeOutcome: Sendable, Hashable {
     public let responseCode: String?
     public let transactionID: String?
     /// The merchant transaction reference this charge was submitted (and recorded) under —
-    /// pass to `transactions.receipt(forReference:)` to build the receipt QR (STORY-56).
+    /// pass to `transactions.receipt(forReference:)` to build the receipt QR.
     public let reference: String
 }
 
@@ -282,7 +282,7 @@ public struct TransactionStatus: Sendable, Hashable {
     }
 }
 
-/// One payment the merchant has taken, kept locally by the SDK (STORY-48). `amountMinorUnits` is
+/// One payment the merchant has taken, kept locally by the SDK. `amountMinorUnits` is
 /// in **minor units**; `rail` is `"TAP"` / `"QR_MPM"` / `"QR_CPM"`; `status` is
 /// `"APPROVED"` / `"DECLINED"` / `"PENDING"` / `"FAILED"`.
 public struct MerchantTransaction: Sendable, Hashable {
@@ -322,7 +322,7 @@ public struct MerchantTransaction: Sendable, Hashable {
     }
 }
 
-/// A merchant receipt for one transaction (STORY-48 §2.4). `qrPayload` is the receipt JSON to
+/// A merchant receipt for one transaction. `qrPayload` is the receipt JSON to
 /// render as a QR — scannable by the customer wallet's receipt scanner.
 public struct MerchantReceipt: Sendable, Hashable {
     public let merchantName: String
@@ -365,7 +365,7 @@ public enum VeyraSoftPOSError: Error, Sendable {
     /// A backend call failed; `message` carries the underlying description.
     case requestFailed(message: String)
     /// Arming the tap reader was refused — the wallet's payment is mid-flight, or the
-    /// combined app bypassed `VeyraSDK` mode handling (STORY-35).
+    /// combined app bypassed `VeyraSDK` mode handling.
     case tapRefused(message: String)
 }
 
@@ -408,12 +408,12 @@ public final class VeyraSoftPOS: @unchecked Sendable {
     /// Transaction queries — status polling by merchant transaction reference.
     public var transactions: Transactions { Transactions(owner: self) }
 
-    /// Merchant-presented QR payments (MPM rail, STORY-33 Phase 3): create the signed context
+    /// Merchant-presented QR payments (MPM rail): create the signed context
     /// to render as the QR, and poll its lifecycle.
     public var payments: Payments { Payments(owner: self) }
 
-    /// Contactless tap acceptance — the customer's Android Veyra wallet taps this iPhone
-    /// (STORY-35). Reads Veyra's own application over CoreNFC; no Apple entitlement beyond
+    /// Contactless tap acceptance — the customer's Android Veyra wallet taps this iPhone.
+    /// Reads Veyra's own application over CoreNFC; no Apple entitlement beyond
     /// standard NFC tag reading, no scheme-card reading.
     public var tap: Tap { Tap(owner: self) }
 
@@ -435,7 +435,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
         }
     }
 
-    // Stored-merchant plumbing (ISSUE-05) — SDK-owned Keychain persistence, the iOS twin of
+    // Stored-merchant plumbing — SDK-owned Keychain persistence, the iOS twin of
     // Android's MerchantDataStore. Internal (not fileprivate) so tests can drive it directly.
 
     private func withMerchantStorage<T>(_ body: (MerchantStorage) -> T) -> T {
@@ -548,7 +548,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
                         acquirerId: registration.acquirerID
                     )
                 )
-                // Persist the registration (ISSUE-05) — same fold as Android's MerchantService:
+                // Persist the registration — same fold as Android's MerchantService:
                 // response-assigned fields win, terminal ID falls back to the merchant ID.
                 if r.success, let merchantID = r.merchantId {
                     owner.saveStoredMerchant(
@@ -655,8 +655,8 @@ public final class VeyraSoftPOS: @unchecked Sendable {
         }
 
         /// The merchant's locally-kept transactions across every rail (tap, QR MPM, QR CPM), most
-        /// recent first — the SDK records each payment taken, so this needs no backend round trip
-        /// (STORY-48). Mirrors Android's `TransactionService.getLastTransactions`.
+        /// recent first — the SDK records each payment taken, so this needs no backend round trip.
+        /// Mirrors Android's `TransactionService.getLastTransactions`.
         public func history(limit: Int = 50) async throws -> [MerchantTransaction] {
             try await owner.call { kmp in
                 try await kmp.merchantTransactions(limit: Int32(limit)).map { r in
@@ -676,7 +676,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
             }
         }
 
-        /// Build the receipt for one transaction (STORY-48 §2.4): display fields plus a
+        /// Build the receipt for one transaction: display fields plus a
         /// `qrPayload` JSON scannable by the wallet's receipt scanner. The registered merchant's
         /// name/address (Keychain-stored) are folded in. Nil when the reference is unknown.
         public func receipt(forReference reference: String) async throws -> MerchantReceipt? {
@@ -705,7 +705,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
         }
     }
 
-    /// Merchant-presented QR payments (MPM rail, STORY-33 Phase 3).
+    /// Merchant-presented QR payments (MPM rail).
     public struct Payments: Sendable {
         fileprivate let owner: VeyraSoftPOS
 
@@ -713,10 +713,10 @@ public final class VeyraSoftPOS: @unchecked Sendable {
         /// `mpmPayload` as the QR verbatim. Same payment-gateway base URL as `/payment`.
         /// `currency` is ISO 4217 numeric (e.g. `"566"` for NGN; leading zeros accepted) —
         /// the gateway requires it, so the app must always supply it.
-        /// - Parameter onExpired: STORY-60 — the SDK calls this once, on the main thread, when the
-        ///   created QR reaches its `expiry`. Blank/replace the code on this so it can't be scanned
-        ///   once lapsed. The SDK owns the timer: a new `createContext` supersedes it, and
-        ///   `cancelQrExpiry()` stops it (call on teardown). Omit to keep the old behaviour.
+        /// - Parameter onExpired: the SDK calls this once, on the main thread, when the
+        /// created QR reaches its `expiry`. Blank/replace the code on this so it can't be scanned
+        /// once lapsed. The SDK owns the timer: a new `createContext` supersedes it, and
+        /// `cancelQrExpiry()` stops it (call on teardown). Omit to keep the old behaviour.
         public func createContext(
             merchantID: String,
             amountMinorUnits: Int64,
@@ -739,7 +739,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
             }
         }
 
-        /// STORY-60: stop the active MPM-QR expiry watch started by `createContext`. Call on
+        /// Stop the active MPM-QR expiry watch started by `createContext`. Call on
         /// teardown (the QR page is left) so the `onExpired` callback can't fire into dead UI.
         /// Idempotent; a new `createContext` also supersedes any prior watch.
         public func cancelQrExpiry() {
@@ -780,12 +780,12 @@ public final class VeyraSoftPOS: @unchecked Sendable {
         /// tampered payload or a different amount declines at the token provider.
         public func chargeCustomerQr(_ scanned: ScannedCustomerQr) async throws -> CustomerQrChargeOutcome {
             // Supplied (not SDK-generated) so the outcome can hand it back for the receipt
-            // lookup (STORY-56) — mirrors the Android sample's tap-reference idiom.
+            // lookup — mirrors the Android sample's tap-reference idiom.
             let reference = "\(Int(Date().timeIntervalSince1970 * 1000))_\(Int.random(in: 1000...9999))"
             return try await owner.call { kmp in
                 // Apply the registered merchant so the /payment request carries
                 // merchant_id/acquirer_id/mcc/name/location — the CPM twin of the tap's
-                // merchant enrichment (ISSUE-33; the server rejects a null merchant_id).
+                // merchant enrichment.
                 let response = try await kmp.chargeCpmQr(
                     scanned: scanned.raw,
                     merchant: owner.storedTapMerchant(),
@@ -801,7 +801,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
         }
     }
 
-    /// Contactless tap acceptance (Android-wallet → iPhone rail, STORY-35).
+    /// Contactless tap acceptance (Android-wallet → iPhone rail).
     public struct Tap: Sendable {
         fileprivate let owner: VeyraSoftPOS
 
@@ -816,7 +816,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
             // Enrich the tap with the registered merchant so 9F4E/9F15/DF0E/DF0F carry real
             // values (the Android reader sources these from MerchantDataStore).
             let merchant = owner.storedTapMerchant()
-            // Settlement capability (STORY-43): the shared payment client the kernel uses to run
+            // Settlement capability: the shared payment client the kernel uses to run
             // TERMINAL_ACTION_ANALYSIS → ONLINE_PROCESSING → COMPLETION. nil if not configured —
             // the tap then runs the reader dialogue only.
             let paymentProcessing = try? owner.requireKmp().makePaymentProcessing()
@@ -831,7 +831,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
     }
 }
 
-/// A tap-payment lifecycle event (STORY-35). Non-terminal events keep the reader armed —
+/// A tap-payment lifecycle event. Non-terminal events keep the reader armed —
 /// mirror a physical terminal: show a transient hint, keep the waiting screen up.
 public enum TapPaymentEvent: Sendable {
     /// Customer's phone connected and the Veyra application selected — dialogue running ("hold steady").
@@ -854,7 +854,7 @@ public struct TapPaymentResult: Sendable {
     public let iccDataHex: String?
     public let errorMessage: String?
     /// The merchant transaction reference the settlement request carried — pass to
-    /// `transactions.receipt(forReference:)` for the receipt QR (STORY-56).
+    /// `transactions.receipt(forReference:)` for the receipt QR.
     public let reference: String?
 }
 

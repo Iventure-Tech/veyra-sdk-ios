@@ -1,21 +1,21 @@
-// VeyraSDK — public iOS API of the combined Veyra SDK (STORY-33 Phase 2).
+// VeyraSDK — public iOS API of the combined Veyra SDK.
 //
-// Pure-Swift facade over the VeyraKMP umbrella framework (naming per story-33 §2.4). Mirrors
-// Android's `VeyraSdk` facade: a combined SoftPOS+Wallet app configures BOTH SDKs through this
-// entry point, which also owns the app's **exclusive mode** — the same shared state machine
-// (`ExclusiveModeCoordinator`, veyra-core commonMain) Android's `VeyraModeManager` delegates to:
+// Pure-Swift facade over the VeyraKMP umbrella framework. Mirrors Android's `VeyraSdk`
+// facade: a combined SoftPOS+Wallet app configures BOTH SDKs through this entry point,
+// which also owns the app's **exclusive mode** — the same shared state machine that
+// Android's mode handling delegates to:
 //
 // - the process starts (and re-configures to) **inert `.none`** — never live at launch, even
-//   after being killed in Pay;
+// after being killed in Pay;
 // - mode derives from the foreground screen: screens call `activate(_:)` on appear and
-//   `release(_:)` on disappear (the iOS equivalent of Android's lifecycle observers);
+// `release(_:)` on disappear (the iOS equivalent of Android's lifecycle observers);
 // - switching away from a mode whose payment is mid-flight throws `VeyraSDKError.modeSwitchRefused`;
 // - iOS has no HCE (Apple platform lock), so no capability toggling happens today; CoreNFC
-//   reader arming (STORY-35) will consult the same arbiter.
+// reader arming will consult the same arbiter.
 //
 // Android ↔ iOS name mapping (excerpt; full table in the package README):
-//   VeyraSdk.initialize(activity, config); VeyraSdk.setMode(NfcMode.WALLET)
-//     ↔ VeyraSDK.configure(...); try VeyraSDK.shared.setMode(.wallet)
+// VeyraSdk.initialize(activity, config); VeyraSdk.setMode(NfcMode.WALLET)
+// ↔ VeyraSDK.configure(...); try VeyraSDK.shared.setMode(.wallet)
 import Foundation
 import VeyraKMP
 import VeyraSoftPOS

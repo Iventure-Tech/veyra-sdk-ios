@@ -1,12 +1,12 @@
-// VeyraWallet — public iOS API of the Veyra wallet SDK (STORY-33 Phase 2).
+// VeyraWallet — public iOS API of the Veyra wallet SDK.
 //
-// Pure-Swift facade over the VeyraKMP umbrella framework (naming per story-33 §2.4:
-// Swift-idiomatic, no Iventure* prefix, async/await, typed errors). KMP/Obj-C types (VKMP*)
-// must never appear in public signatures — every boundary maps to a Swift type here.
+// Pure-Swift facade over the VeyraKMP umbrella framework (Swift-idiomatic: async/await,
+// typed errors). KMP/Obj-C types (VKMP*) must never appear in public signatures — every
+// boundary maps to a Swift type here.
 //
 // Android ↔ iOS name mapping (excerpt; full table in the package README):
-//   IventureWalletSdk.getInstance()?.tokenisationService.getBanks { … }
-//     ↔ try await VeyraWallet.shared.tokenisation.banks()
+// VeyraWalletSdk.getInstance()?.tokenisationService.getBanks { … }
+// ↔ try await VeyraWallet.shared.tokenisation.banks()
 import Foundation
 import VeyraKMP
 
@@ -25,7 +25,7 @@ public struct VeyraWalletConfiguration: Sendable {
     public let environment: Environment
     public let clientID: String?
     public let clientSecret: String?
-    /// Wallet identity (mirrors Android's `IventureWalletSdkConfig`; required for eligibility/digitise).
+    /// Wallet identity (mirrors Android's `VeyraWalletSdkConfig`; required for eligibility/digitise).
     /// The `paymentApplicationInstanceID` is NOT configured — the SDK generates and persists an
     /// install-scoped one and sends it on every eligibility/digitise request (read it via
     /// `VeyraWallet.shared.paymentApplicationInstanceID()`).
@@ -57,7 +57,7 @@ public struct VeyraWalletConfiguration: Sendable {
     /// App Attest attests the *app*, so this is your team — not the SDK vendor's. **Mandatory:**
     /// `digitise` fails fast if it is missing.
     public let appleTeamID: String
-    /// Digitise `provision_context` allow-lists (mirror Android's `IventureWalletSdkConfig`).
+    /// Digitise `provision_context` allow-lists (mirror Android's `VeyraWalletSdkConfig`).
     /// The token product can restrict provisioning to these — a restricted dimension that the
     /// request omits is declined (e.g. `country_code … do not match any of allowed`).
     /// Country codes are ISO 3166-1 *numeric*, 3–4 digits (`"0566"` Nigeria, `"0826"` UK).
@@ -175,8 +175,8 @@ public struct StoredCard: Sendable, Hashable, Identifiable {
     /// True on the wallet's **active** token — the one payments use by default. At most one
     /// stored card is active; change the selection with `setActiveToken(_:)`.
     public let isActive: Bool
-    /// True when this card cannot pay until the wallet app has been **online** to refresh it
-    /// (STORY-51) — render the card greyed out / not tappable and prompt the user to connect.
+    /// True when this card cannot pay until the wallet app has been **online** to refresh it —
+    /// render the card greyed out / not tappable and prompt the user to connect.
     /// Derived fresh on every read; it clears on its own once a refresh succeeds.
     public let requiresOnline: Bool
 
@@ -355,8 +355,8 @@ public struct PaymentQr: Sendable, Hashable {
     /// When the wallet should stop displaying this QR and offer regenerate.
     public let expiresAtEpochMillis: Int64
     /// SHA-256(cryptogram‖ATC‖UN) hex — this render's unique transaction hash. Match it against a
-    /// `TransactionSummary.transactionHash` to reconcile the outcome of *exactly this* QR
-    /// (ISSUE-71), instead of guessing by record time.
+    /// `TransactionSummary.transactionHash` to reconcile the outcome of *exactly this* QR,
+    /// instead of guessing by record time.
     public let transactionHash: String
 }
 
@@ -398,7 +398,7 @@ public struct TransactionSummary: Sendable, Hashable {
     /// (scanned a merchant MPM QR); nil on legacy rows — show nothing rather than guess.
     public let entryMethod: String?
     /// Registered merchant location (`"city, state"`) when known; backfilled on CPM rows by
-    /// `reconcilePendingTransactions()` from the gateway (STORY-58).
+    /// `reconcilePendingTransactions()` from the gateway.
     public let merchantLocation: String?
     /// The merchant's transaction reference (MPM: the scanned QR's txRef, captured before the
     /// push) — with `merchantId` + the transaction date, the join key for MPM merchant receipts,
@@ -439,7 +439,7 @@ public enum VeyraWalletError: Error, Sendable {
     /// The system authentication (Face ID / Touch ID / passcode) failed or was cancelled —
     /// stay on the confirm screen; no payment was attempted.
     case authenticationFailed(message: String)
-    /// The card cannot pay until the wallet has been **online** to refresh it (STORY-51) —
+    /// The card cannot pay until the wallet has been **online** to refresh it —
     /// prompt the user to connect to the internet; no payment was attempted.
     case onlineRequired(message: String)
     /// The card's server-side status is not ACTIVE (e.g. suspended by the issuer) — payments
@@ -447,7 +447,7 @@ public enum VeyraWalletError: Error, Sendable {
     case tokenNotActive(message: String)
 }
 
-// ISSUE-52: without LocalizedError, `error.localizedDescription` renders the useless
+// Without LocalizedError, `error.localizedDescription` renders the useless
 // "The operation couldn't be completed. (VeyraWallet.VeyraWalletError error N.)" and the
 // underlying reason (e.g. a receipt rejection's precise cause) is invisible to the user AND
 // to anyone debugging. Every case now surfaces its carried message.
@@ -585,8 +585,7 @@ public final class VeyraWallet: @unchecked Sendable {
             recommendationReasons: [TokenizationRecommendationReason]? = nil,
             bankName: String? = nil
         ) async throws -> DigitiseResult {
-            // number_of_active_tokens is SDK-computed from its token registry — no caller input
-            // (STORY-42 breaking change, pre-live-approved).
+            // number_of_active_tokens is SDK-computed from its token registry — no caller input.
             try await call { kmp in
                 let r = try await kmp.digitise(
                     accountNumber: accountNumber,
@@ -615,7 +614,7 @@ public final class VeyraWallet: @unchecked Sendable {
             }
         }
 
-        /// The tokens this wallet holds — the SDK's own registry (STORY-42), written by
+        /// The tokens this wallet holds — the SDK's own registry, written by
         /// `digitise` on a successful provision; includes which token is active. Local read,
         /// no network.
         public func tokens() async throws -> [StoredCard] {
@@ -698,8 +697,8 @@ public final class VeyraWallet: @unchecked Sendable {
         }
 
         /// Deactivate a token on the backend. On success the SDK also wipes every on-device
-        /// artefact for the token and promotes the next token when the active one was removed
-        /// (STORY-42); on failure nothing local changes.
+        /// artefact for the token and promotes the next token when the active one was removed;
+        /// on failure nothing local changes.
         public func deactivate(_ tokenUniqueReference: String) async throws -> TokenStatusUpdateResponse {
             try await call { kmp in
                 let r = try await kmp.deactivateToken(tokenUniqueReference: tokenUniqueReference)
@@ -714,7 +713,7 @@ public final class VeyraWallet: @unchecked Sendable {
             }
         }
 
-        /// Observe a token until it activates (STORY-66; Android `observeActivation` parity):
+        /// Observe a token until it activates:
         /// the SDK polls the token's status every 10 seconds for up to 5 minutes. `onActivated`
         /// fires exactly once when the token becomes ACTIVE (navigate to the wallet);
         /// `onTimeout` after 5 minutes without activation; `onError` reports each failed check
@@ -827,11 +826,11 @@ public final class VeyraWallet: @unchecked Sendable {
         /// (one authentication per QR — a regenerate after `expiresAtEpochMillis` needs a new
         /// one; the SDK enforces it). Fully offline: nothing is sent; the merchant's SoftPOS
         /// submits the payment and the outcome appears via the wallet's history polling.
-        /// - Parameter onExpired: STORY-60 — the SDK calls this once, on the main thread, when the
-        ///   returned QR reaches its `expiresAtEpochMillis`. Blank/replace the code on this so it
-        ///   can't be scanned once lapsed (a dimmed QR is still machine-readable). The SDK owns the
-        ///   timer: a new `showQrToPay` supersedes it, and `cancelQrExpiry()` stops it (call on
-        ///   teardown). Omit to keep the old behaviour.
+        /// - Parameter onExpired: the SDK calls this once, on the main thread, when the
+        /// returned QR reaches its `expiresAtEpochMillis`. Blank/replace the code on this so it
+        /// can't be scanned once lapsed (a dimmed QR is still machine-readable). The SDK owns the
+        /// timer: a new `showQrToPay` supersedes it, and `cancelQrExpiry()` stops it (call on
+        /// teardown). Omit to keep the old behaviour.
         public func showQrToPay(amountMinorUnits: Int64, onExpired: (() -> Void)? = nil) async throws -> PaymentQr {
             try await call { kmp in
                 let qr = try await kmp.showQrToPay(amountMinorUnits: amountMinorUnits, onExpired: onExpired)
@@ -846,7 +845,7 @@ public final class VeyraWallet: @unchecked Sendable {
             }
         }
 
-        /// STORY-60: stop the active show-to-pay QR expiry watch started by `showQrToPay`. Call on
+        /// Stop the active show-to-pay QR expiry watch started by `showQrToPay`. Call on
         /// teardown (the QR screen is dismissed) so the `onExpired` callback can't fire into dead
         /// UI. Idempotent; a new `showQrToPay` also supersedes any prior watch.
         public func cancelQrExpiry() {
@@ -869,14 +868,14 @@ public final class VeyraWallet: @unchecked Sendable {
             }
         }
 
-        // ── Receipts & transaction history (STORY-40) ─────────────────────────────────────
+        // ── Receipts & transaction history ─────────────────────────────────────
 
         /// Process a scanned merchant-receipt QR: decode/validate, verify it matches a transaction
         /// this wallet made, dedupe, and store. Returns the stored receipt. Raw JSON or base64.
         @discardableResult
         /// - Parameter expectedTransactionHash: set when the scan was launched FROM a specific
-        ///   transaction's screen (ISSUE-69) — a receipt belonging to a different transaction is
-        ///   rejected (and not stored) instead of silently linking elsewhere. Nil = unscoped.
+        /// transaction's screen — a receipt belonging to a different transaction is
+        /// rejected (and not stored) instead of silently linking elsewhere. Nil = unscoped.
         public func processReceipt(_ qrPayload: String, expectedTransactionHash: String? = nil) async throws -> TransactionReceipt {
             try await call { kmp in
                 map(try await kmp.processReceipt(qrPayload: qrPayload, expectedTransactionHash: expectedTransactionHash))
@@ -915,7 +914,7 @@ public final class VeyraWallet: @unchecked Sendable {
             }
         }
 
-        /// Reconcile still-PENDING transactions against the backend (STORY-40). Call on scene-active
+        /// Reconcile still-PENDING transactions against the backend. Call on scene-active
         /// (a `scenePhase` observer) and after showing a CPM QR; the CPM rail is offline, so this is
         /// how a shown-QR payment's outcome (approved/declined) lands in the history. Best-effort.
         public func reconcilePendingTransactions() async throws {
@@ -974,13 +973,13 @@ public final class VeyraWallet: @unchecked Sendable {
                 throw error
             } catch {
                 let message = error.localizedDescription
-                // STORY-51: the KMP layer codes the generic go-online refusal into the message;
+                // the KMP layer codes the generic go-online refusal into the message;
                 // surface it as the typed case so hosts can branch without string matching.
                 if message.contains("ONLINE_REQUIRED") {
                     throw VeyraWalletError.onlineRequired(
                         message: "Connect to the internet — the wallet needs to refresh this card before it can pay")
                 }
-                // STORY-66: a non-ACTIVE polled status (e.g. issuer-side suspension) refuses
+                // a non-ACTIVE polled status (e.g. issuer-side suspension) refuses
                 // before any proof is built; typed so hosts can branch without string matching.
                 if message.contains("TOKEN_NOT_ACTIVE") {
                     throw VeyraWalletError.tokenNotActive(message: message)
