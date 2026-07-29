@@ -7,16 +7,20 @@
 //
 // - the process starts (and re-configures to) **inert `.none`** — never live at launch, even
 // after being killed in Pay;
-// - mode derives from the foreground screen: screens call `activate(_:)` on appear and
-// `release(_:)` on disappear (the iOS equivalent of Android's lifecycle observers);
-// - switching away from a mode whose payment is mid-flight throws `VeyraSDKError.modeSwitchRefused`;
-// - iOS has no HCE (Apple platform lock), so no capability toggling happens today; CoreNFC
-// reader arming will consult the same arbiter.
+// - the mode is **SDK-managed** (STORY-68): claimed at the point of use (tap-session start,
+// wallet payment execution), released at session end / payment completion, and dropped to
+// `.none` when the app backgrounds — the host app never calls a mode API, it may only
+// observe `currentMode`;
+// - a payment genuinely mid-flight keeps its mode (switches/releases defer until it finishes);
+// - iOS has no HCE (Apple platform lock); CoreNFC reader arming consults the same arbiter.
 //
 // Android ↔ iOS name mapping (excerpt; full table in the package README):
-// VeyraSdk.initialize(activity, config); VeyraSdk.setMode(NfcMode.WALLET)
-// ↔ VeyraSDK.configure(...); try VeyraSDK.shared.setMode(.wallet)
+// VeyraSdk.initialize(activity, config); sdk.currentMode()
+// ↔ VeyraSDK.configure(...); VeyraSDK.shared.currentMode
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 import VeyraKMP
 import VeyraSoftPOS
 import VeyraWallet
@@ -35,17 +39,15 @@ public enum VeyraMode: String, Sendable {
 public enum VeyraSDKError: Error, Sendable {
     /// `VeyraSDK.configure(_:)` has not been called.
     case notConfigured
-    /// A mode switch was refused because the outgoing mode's payment is mid-flight.
-    case modeSwitchRefused(message: String)
 }
 
 /// Entry point of the combined Veyra SDK on iOS (SoftPOS + Wallet + exclusive mode).
 ///
+/// The exclusive mode is SDK-managed — configure once at launch and use the two member SDKs;
+/// the mode follows your payment activity by itself. `currentMode` is observe-only.
+///
 /// ```swift
 /// VeyraSDK.configure(softpos: softposConfig, wallet: walletConfig)
-/// // Get-paid screen:
-/// .onAppear { VeyraSDK.shared.activate(.softpos) }
-/// .onDisappear { VeyraSDK.shared.release(.softpos) }
 /// ```
 public final class VeyraSDK: @unchecked Sendable {
 
@@ -67,7 +69,29 @@ public final class VeyraSDK: @unchecked Sendable {
         VeyraSoftPOS.configure(softpos)
         VeyraWallet.configure(wallet)
         VeyraSdkKmp.shared.configure()
+        shared.installBackgroundInertGuard()
         shared.configured = true
+    }
+
+    private var backgroundObserver: NSObjectProtocol?
+
+    /// SDK-owned inertness on backgrounding (the iOS analogue of the Android inert backstop):
+    /// whichever mode is held is released best-effort when the app leaves the foreground — a
+    /// payment genuinely mid-flight keeps its mode until it finishes. Idempotent across
+    /// reconfigures. Must be called with `lock` held.
+    private func installBackgroundInertGuard() {
+        #if canImport(UIKit)
+        if let existing = backgroundObserver {
+            NotificationCenter.default.removeObserver(existing)
+        }
+        backgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            VeyraSdkKmp.shared.dropToInert()
+        }
+        #endif
     }
 
     private func requireConfigured() throws {
@@ -84,28 +108,4 @@ public final class VeyraSDK: @unchecked Sendable {
         return VeyraMode(rawValue: VeyraSdkKmp.shared.currentMode()) ?? .none
     }
 
-    /// Switch the exclusive mode explicitly.
-    /// - Throws: `VeyraSDKError.modeSwitchRefused` while the outgoing mode's payment is mid-flight.
-    public func setMode(_ mode: VeyraMode) throws {
-        try requireConfigured()
-        do {
-            try VeyraSdkKmp.shared.setMode(modeName: mode.rawValue)
-        } catch {
-            throw VeyraSDKError.modeSwitchRefused(message: error.localizedDescription)
-        }
-    }
-
-    /// A screen becoming active for `mode` (call on appear). Returns false when the switch is
-    /// deferred because the other mode's payment is mid-flight.
-    @discardableResult
-    public func activate(_ mode: VeyraMode) -> Bool {
-        guard (try? requireConfigured()) != nil else { return false }
-        return VeyraSdkKmp.shared.activate(modeName: mode.rawValue)
-    }
-
-    /// A screen leaving `mode` (call on disappear): drops to `.none` if it was the active mode.
-    public func release(_ mode: VeyraMode) {
-        guard (try? requireConfigured()) != nil else { return }
-        VeyraSdkKmp.shared.release(modeName: mode.rawValue)
-    }
 }
