@@ -28,6 +28,10 @@ https://github.com/Iventure-Tech/veyra-sdk-ios
 Pin an exact released version, then add the products your integration needs
 (`VeyraSDK`, `VeyraSoftPOS`, `VeyraWallet`).
 
+The package's precompiled binary is hosted on the Veyra artifact server, which is
+authenticated — put the repository credentials from your Veyra onboarding in `~/.netrc`
+(`machine repo.veyra.co` + login/password, `chmod 600`) so SwiftPM can download it.
+
 ## Documentation & sample app
 
 The full **iOS developer guide** — platform requirements (Info.plist keys, entitlements,

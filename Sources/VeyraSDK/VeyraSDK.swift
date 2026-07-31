@@ -7,7 +7,7 @@
 //
 // - the process starts (and re-configures to) **inert `.none`** — never live at launch, even
 // after being killed in Pay;
-// - the mode is **SDK-managed** (STORY-68): claimed at the point of use (tap-session start,
+// - the mode is **SDK-managed**: claimed at the point of use (tap-session start,
 // wallet payment execution), released at session end / payment completion, and dropped to
 // `.none` when the app backgrounds — the host app never calls a mode API, it may only
 // observe `currentMode`;

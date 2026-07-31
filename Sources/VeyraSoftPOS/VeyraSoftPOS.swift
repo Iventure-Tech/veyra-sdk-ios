@@ -30,7 +30,7 @@ public struct VeyraSoftPOSConfiguration: Sendable {
     public let clientID: String?
     public let clientSecret: String?
     /// `.local` only: your dev machine's base URL (e.g. `http://localhost:8083`).
-    /// Ignored for `.test`/`.live` — the moral equivalent of overriding Android's `local_host`.
+    /// Ignored for `.test`/`.live`.
     public let localBaseURLOverride: URL?
     /// Dev override for the OTLP logs endpoint; by default it resolves from the environment.
     public let remoteLogsURLOverride: URL?

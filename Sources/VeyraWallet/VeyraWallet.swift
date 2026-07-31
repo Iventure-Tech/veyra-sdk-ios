@@ -35,7 +35,7 @@ public struct VeyraWalletConfiguration: Sendable {
     /// the SDK auto-detects it from the hardware (iPad → `"TABLET"`, otherwise `"MOBILE"`).
     public let deviceType: String?
     /// `.local` only: your dev machine's base URL (e.g. `http://localhost:8080`).
-    /// Ignored for `.test`/`.live` — the moral equivalent of overriding Android's `local_host`.
+    /// Ignored for `.test`/`.live`.
     public let localBaseURLOverride: URL?
     /// `.local` only: your dev machine's **payment gateway** base URL for scan-to-pay pushes
     /// (e.g. `http://localhost:8083`) — a different service/port from the wallet host.
