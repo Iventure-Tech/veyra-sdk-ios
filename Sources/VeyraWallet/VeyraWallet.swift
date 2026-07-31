@@ -31,9 +31,6 @@ public struct VeyraWalletConfiguration: Sendable {
     /// `VeyraWallet.shared.paymentApplicationInstanceID()`).
     public let paymentAppProviderID: String?
     public let tokenRequestorID: String?
-    /// Optional override for the device type reported to the backend. Normally leave `nil` —
-    /// the SDK auto-detects it from the hardware (iPad → `"TABLET"`, otherwise `"MOBILE"`).
-    public let deviceType: String?
     /// `.local` only: your dev machine's base URL (e.g. `http://localhost:8080`).
     /// Ignored for `.test`/`.live`.
     public let localBaseURLOverride: URL?
@@ -72,7 +69,6 @@ public struct VeyraWalletConfiguration: Sendable {
         clientSecret: String? = nil,
         paymentAppProviderID: String? = nil,
         tokenRequestorID: String? = nil,
-        deviceType: String? = nil,
         localBaseURLOverride: URL? = nil,
         localGatewayURLOverride: URL? = nil,
         remoteLogsURLOverride: URL? = nil,
@@ -90,7 +86,6 @@ public struct VeyraWalletConfiguration: Sendable {
         self.clientSecret = clientSecret
         self.paymentAppProviderID = paymentAppProviderID
         self.tokenRequestorID = tokenRequestorID
-        self.deviceType = deviceType
         self.localBaseURLOverride = localBaseURLOverride
         self.localGatewayURLOverride = localGatewayURLOverride
         self.remoteLogsURLOverride = remoteLogsURLOverride
@@ -495,7 +490,6 @@ public final class VeyraWallet: @unchecked Sendable {
                 clientSecret: configuration.clientSecret,
                 paymentAppProviderId: configuration.paymentAppProviderID,
                 tokenRequestorId: configuration.tokenRequestorID,
-                deviceType: configuration.deviceType,
                 localBaseUrlOverride: configuration.localBaseURLOverride?.absoluteString,
                 localGatewayUrlOverride: configuration.localGatewayURLOverride?.absoluteString,
                 remoteLogsUrlOverride: configuration.remoteLogsURLOverride?.absoluteString,
