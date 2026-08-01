@@ -31,18 +31,6 @@ public struct VeyraWalletConfiguration: Sendable {
     /// `VeyraWallet.shared.paymentApplicationInstanceID()`).
     public let paymentAppProviderID: String?
     public let tokenRequestorID: String?
-    /// `.local` only: your dev machine's base URL (e.g. `http://localhost:8080`).
-    /// Ignored for `.test`/`.live`.
-    public let localBaseURLOverride: URL?
-    /// `.local` only: your dev machine's **payment gateway** base URL for scan-to-pay pushes
-    /// (e.g. `http://localhost:8083`) — a different service/port from the wallet host.
-    /// Ignored for `.test`/`.live`.
-    public let localGatewayURLOverride: URL?
-    /// Dev override for the OTLP logs endpoint; by default it resolves from the environment.
-    public let remoteLogsURLOverride: URL?
-    /// HTTP debug logging: request/response lines + bodies to the Xcode console (the iOS
-    /// mirror of the Android SDK's HTTP log category). Default off; never enable in production.
-    public let httpLoggingEnabled: Bool
     /// App version reported to the backend during digitise.
     public let appVersion: String
     /// Optional override for the app's bundle id (the attestation `package_name` / App Attest
@@ -69,10 +57,6 @@ public struct VeyraWalletConfiguration: Sendable {
         clientSecret: String? = nil,
         paymentAppProviderID: String? = nil,
         tokenRequestorID: String? = nil,
-        localBaseURLOverride: URL? = nil,
-        localGatewayURLOverride: URL? = nil,
-        remoteLogsURLOverride: URL? = nil,
-        httpLoggingEnabled: Bool = false,
         appVersion: String = "1.0.0",
         bundleID: String? = nil,
         appleTeamID: String,
@@ -86,10 +70,6 @@ public struct VeyraWalletConfiguration: Sendable {
         self.clientSecret = clientSecret
         self.paymentAppProviderID = paymentAppProviderID
         self.tokenRequestorID = tokenRequestorID
-        self.localBaseURLOverride = localBaseURLOverride
-        self.localGatewayURLOverride = localGatewayURLOverride
-        self.remoteLogsURLOverride = remoteLogsURLOverride
-        self.httpLoggingEnabled = httpLoggingEnabled
         self.appVersion = appVersion
         self.bundleID = bundleID
         self.appleTeamID = appleTeamID
@@ -490,10 +470,6 @@ public final class VeyraWallet: @unchecked Sendable {
                 clientSecret: configuration.clientSecret,
                 paymentAppProviderId: configuration.paymentAppProviderID,
                 tokenRequestorId: configuration.tokenRequestorID,
-                localBaseUrlOverride: configuration.localBaseURLOverride?.absoluteString,
-                localGatewayUrlOverride: configuration.localGatewayURLOverride?.absoluteString,
-                remoteLogsUrlOverride: configuration.remoteLogsURLOverride?.absoluteString,
-                httpLoggingEnabled: configuration.httpLoggingEnabled,
                 appVersion: configuration.appVersion,
                 bundleId: configuration.bundleID,
                 appleTeamId: configuration.appleTeamID,

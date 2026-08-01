@@ -29,29 +29,15 @@ public struct VeyraSoftPOSConfiguration: Sendable {
     public let environment: Environment
     public let clientID: String?
     public let clientSecret: String?
-    /// `.local` only: your dev machine's base URL (e.g. `http://localhost:8083`).
-    /// Ignored for `.test`/`.live`.
-    public let localBaseURLOverride: URL?
-    /// Dev override for the OTLP logs endpoint; by default it resolves from the environment.
-    public let remoteLogsURLOverride: URL?
-    /// HTTP debug logging: request/response lines + bodies to the Xcode console (the iOS
-    /// mirror of Android's SoftposDebugLog HTTP category). Default off; never enable in production.
-    public let httpLoggingEnabled: Bool
 
     public init(
         environment: Environment,
         clientID: String? = nil,
-        clientSecret: String? = nil,
-        localBaseURLOverride: URL? = nil,
-        remoteLogsURLOverride: URL? = nil,
-        httpLoggingEnabled: Bool = false
+        clientSecret: String? = nil
     ) {
         self.environment = environment
         self.clientID = clientID
         self.clientSecret = clientSecret
-        self.localBaseURLOverride = localBaseURLOverride
-        self.remoteLogsURLOverride = remoteLogsURLOverride
-        self.httpLoggingEnabled = httpLoggingEnabled
     }
 }
 
@@ -394,10 +380,7 @@ public final class VeyraSoftPOS: @unchecked Sendable {
             config: SoftposKmpConfig(
                 environmentName: configuration.environment.rawValue,
                 clientId: configuration.clientID,
-                clientSecret: configuration.clientSecret,
-                localBaseUrlOverride: configuration.localBaseURLOverride?.absoluteString,
-                remoteLogsUrlOverride: configuration.remoteLogsURLOverride?.absoluteString,
-                httpLoggingEnabled: configuration.httpLoggingEnabled
+                clientSecret: configuration.clientSecret
             )
         )
     }
