@@ -380,7 +380,12 @@ public final class VeyraSoftPOS: @unchecked Sendable {
             config: SoftposKmpConfig(
                 environmentName: configuration.environment.rawValue,
                 clientId: configuration.clientID,
-                clientSecret: configuration.clientSecret
+                clientSecret: configuration.clientSecret,
+                // Internal plumbing, not developer API: nil selects the SDK's
+                // environment-resolved defaults. ObjC-exported initializers carry no
+                // default arguments, so these parameters must be passed explicitly.
+                localBaseUrlOverride: nil,
+                remoteLogsUrlOverride: nil
             )
         )
     }

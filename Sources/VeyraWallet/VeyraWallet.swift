@@ -470,6 +470,12 @@ public final class VeyraWallet: @unchecked Sendable {
                 clientSecret: configuration.clientSecret,
                 paymentAppProviderId: configuration.paymentAppProviderID,
                 tokenRequestorId: configuration.tokenRequestorID,
+                // Internal plumbing, not developer API: nil selects the SDK's
+                // environment-resolved defaults. ObjC-exported initializers carry no
+                // default arguments, so these parameters must be passed explicitly.
+                localBaseUrlOverride: nil,
+                localGatewayUrlOverride: nil,
+                remoteLogsUrlOverride: nil,
                 appVersion: configuration.appVersion,
                 bundleId: configuration.bundleID,
                 appleTeamId: configuration.appleTeamID,
