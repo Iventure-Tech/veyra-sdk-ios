@@ -66,13 +66,23 @@ default, so you never set a mode. Rules that hold for every provider:
   `X-Veyra-Provider-Type` (your provider's `providerType`: `AUTHENTICATION` or `PROXY`).
 
 ```swift
-try VeyraSDK.configure(
+// (customerID:, config:, provider:) — the same order as Android and React Native.
+let sdk = try VeyraSDK.configure(
     customerID: customerID,
-    provider: MyAssertionProvider(bank: bankAPI),          // or MyProxyProvider(bank: bankAPI)
-    softpos: .init(environment: .live, paymentAppProviderID: providerID),
-    wallet: .init(environment: .live, paymentAppProviderID: providerID,
-                  tokenRequestorID: requestorID, appleTeamID: teamID))
+    config: VeyraSDKConfiguration(
+        softpos: .init(environment: .live, paymentAppProviderID: providerID),
+        wallet: .init(environment: .live, paymentAppProviderID: providerID,
+                      tokenRequestorID: requestorID, appleTeamID: teamID)),
+    provider: MyAssertionProvider(bank: bankAPI))          // or MyProxyProvider(bank: bankAPI)
+let wallet = try sdk.wallet       // VeyraWallet.shared
+let softpos = try sdk.softpos     // VeyraSoftPOS.shared
 ```
+
+**Upgrading from 3.0.0 (setup):** every `configure` takes `(customerID:, config:, provider:)`:
+`VeyraWallet.configure(customerID:config:provider:)`, `VeyraSoftPOS.configure(customerID:config:provider:)`
+and `VeyraSDK.configure(customerID:config:provider:)` with a `VeyraSDKConfiguration(softpos:wallet:)`.
+Each returns its instance. `VeyraSDK.shared.wallet` / `.softpos` give the member SDKs, and
+`currentMode` is now a method, `currentMode()`.
 
 ### `VeyraAssertionProvider` (recommended)
 
@@ -229,7 +239,7 @@ your provider.
 
 Every call that performs an operation answers with an **outcome**, never a thrown failure:
 `responseStatus`, `responseStatusReason` (what to show and log), and `responseCode` on payments
-(for receipts and support — never branch on it). `VeyraResponseStatus` has the constants.
+(for receipts and support — never branch on it). `ResponseStatus` has the constants.
 
 | `responseStatus` | Meaning | Your reference (merchant order ID) | What to do |
 |---|---|---|---|
@@ -278,11 +288,12 @@ throws:
 let tapAnswer = VeyraSoftPOS.shared.payments.cancelPayment(merchantOrderID: orderID)
 
 // Wallet: scan-to-pay, by the order ID in the scanned QR.
-let payAnswer = VeyraWallet.shared.tokenisation.cancelPayment(merchantOrderID: verified.merchantOrderID ?? "")
+let wallet = VeyraWallet.shared
+let payAnswer = wallet.cancelPayment(merchantOrderID: verified.merchantOrderID ?? "")
 
 // Wallet: add a card — start it with your own ID, cancel with the same one.
-let result = try await wallet.tokenisation.digitise(/* … */, clientRequestID: requestID)
-let addCardAnswer = VeyraWallet.shared.tokenisation.cancelDigitise(clientRequestID: requestID)
+let result = try await wallet.digitise(DigitiseParams(/* … */, clientRequestID: requestID))
+let addCardAnswer = wallet.cancelDigitise(clientRequestID: requestID)
 ```
 
 | `CancelResult` | What happened | What to show |

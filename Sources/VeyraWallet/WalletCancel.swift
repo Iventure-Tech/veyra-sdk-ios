@@ -5,9 +5,8 @@
 import Foundation
 @_spi(VeyraInternal) import VeyraCommon
 
-extension VeyraWallet.Tokenisation {
-    /// Cancel the add-card you started with `clientRequestID`
-    /// (``digitise(accountNumber:institutionCode:walletAccountID:accountHolderName:emailAddress:recommendation:mobileNumber:bvn:accountHolderAddress:accountNumberSource:consumerIdentifier:deviceScore:accountScore:recommendationReasons:bankName:clientRequestID:)``).
+extension VeyraWallet {
+    /// Cancel the add-card you started with ``DigitiseParams/clientRequestID`` (``digitise(_:)``).
     ///
     /// - ``CancelResult/cancelled`` — nothing was sent; `digitise` returns `NOT_SENT` /
     ///   `CANCELLED`. Go back to the previous screen; the card can be added again.
